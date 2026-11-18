@@ -169,6 +169,8 @@ Software checks run on November 18, 2026.
 The offline run compared the checked-in inputs against `RefPic/Ref1.png`.
 
 Example:
+
+
 <img src="Results\alarm_20261030_164803_396378_detection.png" alt="Foreign Object Detected Demo" width="520">
 
 These checks cover the software and saved inputs. Live camera acquisition and
