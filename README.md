@@ -1,23 +1,16 @@
 ﻿# Vision Detection
 
-Continuously detect foreign objects inside a circular inspection area using a
-MindVision camera and a clean reference image. Send a confirmed alarm request
-over wired LAN (Modbus TCP) to a Haiwell AC16S0T PLC. PLC ladder logic drives
-the buzzer/light output.
-
-## Web dashboard
-
-Product analysis, architecture strategy, and function-by-function evaluations are organized in [docs/README.md](docs/README.md).
-
-The `UI/` dashboard connects through `vision_server.py` for real camera preview, inspection status, alarm evidence, and start/stop/reset controls. Build it once with `pnpm install --frozen-lockfile` and `pnpm build` inside `UI/`, then run `python vision_server.py --plc-config plc_config.json` from the repository root and open http://127.0.0.1:8765. Click **Start inspection** to open the camera. Omit `--plc-config` for camera-only operation. Stop other camera sessions first.
-
-See [UI/README.md](UI/README.md) for setup, development, and operator details.
+Detect foreign objects inside a circular inspection area using a MindVision
+camera and a clean reference image. Use the web dashboard to view live inspection,
+control the camera, and review alarm evidence. For automated signaling, the
+system can send confirmed alarm requests over Modbus TCP to a Haiwell AC16S0T
+PLC. PLC ladder logic drives the buzzer and light.
 
 ## Current behavior
 
 - Compares live images against the fixed reference `RefPic/Ref1.png`.
-- Confirms an alarm after 3 consecutive positive frames by default.
-- Continues monitoring after an alarm; press **R** in preview after 3 clear frames to reset and rearm.
+- Confirms an alarm after three consecutive positive frames by default.
+- Continues monitoring after an alarm. After three consecutive clear frames by default, use **Reset alarm** in the dashboard or press **R** in the CLI preview to rearm.
 - Saves one evidence set per alarm: raw PNG in `TestPic/`, annotated PNG and mask in `Results/`.
 - Updates PLC alarm, heartbeat and vision health in a background thread; reconnects after communication failures.
 - Camera, processing or storage failures stop monitoring. PLC logic must handle lost heartbeat/unhealthy vision.
@@ -35,12 +28,44 @@ See [UI/README.md](UI/README.md) for setup, development, and operator details.
    application before running this project.
 3. Capture a clean reference as `RefPic/Ref1.png` using the same camera position,
    resolution, orientation and lighting as live inspection.
-4. For PLC operation, connect PC and PLC by Ethernet, configure IP addresses in
-   the same subnet, and enable the PLC Modbus TCP server. Set `plc_config.json`
-   to the actual connection and reserved memory addresses. If missing, copy
-   `plc_config.example.json` first; its IP is only a placeholder.
+4. For PLC operation, connect the PC and PLC by Ethernet, configure IP addresses
+   in the same subnet, and enable the PLC Modbus TCP server. If you do not have a
+   local configuration, create one from the example and set the PLC connection
+   and reserved coil addresses.
 
-## Run
+   ```powershell
+   Copy-Item plc_config.example.json plc_config.json
+   ```
+
+## Web dashboard
+
+Install Node.js 22 and pnpm 10.34.3. From the repository root, build the UI and
+start the local Python service.
+
+```powershell
+cd UI
+pnpm install --frozen-lockfile
+pnpm build
+cd ..
+python vision_server.py
+```
+
+Open <http://127.0.0.1:8765> and click **Start inspection**. Close any other
+camera session first. To enable PLC output, launch the service with
+`python vision_server.py --plc-config plc_config.json`. Press **Ctrl+C** in the
+terminal to stop the service.
+
+- **Overview** shows raw or annotated camera preview, inspection status, and
+  start, stop, and reset controls. **Take photo** downloads the displayed JPEG
+  preview.
+- **Detections** lists up to 100 recent alarms and links to the available
+  full-resolution raw image, annotated image, and mask.
+- **Configuration** displays launch settings. Run `python vision_server.py --help`
+  to see options such as `--camera-index`, `--sdk-dir`, and `--port`.
+
+See [UI/README.md](UI/README.md) for operator behavior and frontend development.
+
+## Command-line inspection
 
 Run commands from the project folder.
 
@@ -71,7 +96,7 @@ Offline mode saves results in `Results/` and never communicates with the PLC.
 Add `--show` to preview each result; press a key to advance. Matching output
 filenames are overwritten on repeated offline runs.
 
-## Command parameters
+## CLI parameters
 
 | Parameter | Default | Purpose |
 |---|---|---|
@@ -89,8 +114,9 @@ filenames are overwritten on repeated offline runs.
 
 ## PLC configuration
 
-Use your PLC's actual IP (currently `192.168.1.111`), port `502`, and unit ID
-(currently `1`). Verify these example memory assignments are free in your PLC:
+Set `host`, `port`, and `unit_id` in `plc_config.json` to match your PLC. The
+[example configuration](plc_config.example.json) uses port `502` and unit ID
+`1`. Verify that these example memory assignments are available in your PLC.
 
 | JSON setting | Example address | PLC function |
 |---|---:|---|
@@ -104,8 +130,9 @@ and drive the selected output (e.g. Y0), monitor heartbeat changes and vision
 health, and handle operator reset. Python does not directly write Y0. Restarting
 Python clears its request; it must not automatically reset the PLC alarm latch.
 
-For **R** to reset the PLC latch, reserve M3 for Python and add this reset rung
-in HaiwellHappy (adapt M10/M11 to your actual program):
+To let **Reset alarm** in the dashboard or **R** in the CLI preview reset the
+PLC latch, reserve M3 for Python. Add this reset rung in HaiwellHappy and adapt
+M10 and M11 to your program.
 
 ```text
        M3        M0        M2        M11
@@ -123,3 +150,13 @@ not that M10 or Y0 actually cleared. Fault conditions driving Y0 can keep it ON.
 Timing settings in JSON: `timeout` = 1 s per socket operation,
 `heartbeat_interval` = 0.5 s between update cycles, and `inspection_timeout` = 5 s
 before inspection is considered stale. Configure the PLC watchdog accordingly.
+
+## Tests and architecture
+
+Run the Python regression tests from the repository root.
+
+```powershell
+python -B -m unittest discover -s tests -v
+```
+
+See [docs/README.md](docs/README.md) for the system architecture and component guides.
