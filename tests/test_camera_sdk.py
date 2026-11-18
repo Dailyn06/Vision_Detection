@@ -5,7 +5,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from camera_controller import find_sdk_directory, MindVisionCamera
+from vision.camera.controller import find_sdk_directory, MindVisionCamera
 
 
 class SDKDiscoveryTests(unittest.TestCase):
@@ -22,9 +22,9 @@ class SDKDiscoveryTests(unittest.TestCase):
                 self.assertEqual(find_sdk_directory(directory), Path(directory).resolve())
 
     def test_ctypes_missing_dll_error_has_actionable_message(self):
-        with patch('camera_controller.platform.system', return_value='Windows'), \
-             patch('camera_controller.find_sdk_directory', return_value=None), \
-             patch('camera_controller.importlib.import_module', side_effect=AttributeError('MVCAMSDK_X64')):
+        with patch('vision.camera.controller.platform.system', return_value='Windows'), \
+             patch('vision.camera.controller.find_sdk_directory', return_value=None), \
+             patch('vision.camera.controller.importlib.import_module', side_effect=AttributeError('MVCAMSDK_X64')):
             with self.assertRaisesRegex(RuntimeError, 'specify --sdk-dir'):
                 MindVisionCamera().__enter__()
 

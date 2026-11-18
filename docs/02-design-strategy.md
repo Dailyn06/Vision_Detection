@@ -6,12 +6,12 @@ The current application separates native camera access, comparison logic and PLC
 
 ```mermaid
 flowchart LR
-    Camera[MindVision camera] --> Adapter[camera_controller.py / mvsdk.py]
-    Reference[Clean reference and ROI] --> Detection[Detection.py]
+    Camera[MindVision camera] --> Adapter[vision/camera]
+    Reference[Clean reference and ROI] --> Detection[vision/detection.py]
     Adapter --> Detection
     Detection --> Loop[main.py inspection loop]
     Loop --> Evidence[Raw / annotation / mask PNGs]
-    Loop --> PLCWorker[plc_output.py worker]
+    Loop --> PLCWorker[vision/plc_output.py worker]
     PLCWorker --> PLC[PLC ladder and physical outputs]
     Loop --> Service[vision_server.py shared state and preview]
     UI[React operator dashboard] -->|start / stop / reset| Service

@@ -1,6 +1,6 @@
 # Reference comparison and detection
 
-Implementation: [Detection.py](../Detection.py).
+Implementation: [detection engine](../vision/detection.py).
 
 ## Function analysis
 

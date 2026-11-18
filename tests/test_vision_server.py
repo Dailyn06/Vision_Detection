@@ -96,12 +96,12 @@ class VisionBridgeTests(unittest.TestCase):
             return result
 
         with TemporaryDirectory() as directory, \
-             patch('camera_controller.MindVisionCamera', return_value=camera), \
+             patch('vision.camera.controller.MindVisionCamera', return_value=camera), \
              patch.object(main, 'TEST_DIR', Path(directory) / 'raw'), \
              patch.object(main, 'RESULT_DIR', Path(directory) / 'results'), \
              patch.object(main.cv2, 'imread', return_value=image), \
              patch.object(main.cv2, 'imwrite', return_value=True), \
-             patch.object(main.Detection, 'detection', side_effect=lambda *_: (image, image[:, :, 0], next(counts))), \
+             patch.object(main.detection, 'detection', side_effect=lambda *_: (image, image[:, :, 0], next(counts))), \
              patch.object(service, 'publish', side_effect=publish), patch('builtins.print'):
             main.run_camera(service.args, service)
         # Reset on frame 7 clears the latch; three later object frames latch a second alarm.

@@ -55,7 +55,7 @@ class MindVisionCamera:
             if sdk_directory:
                 self.dll_directory = os.add_dll_directory(str(sdk_directory))
             try:
-                self.sdk = importlib.import_module("mvsdk")
+                self.sdk = importlib.import_module(".mvsdk", package=__package__)
             except (OSError, AttributeError) as error:
                 raise RuntimeError(
                     "Cannot load MindVision SDK. Install Windows SDK/drivers, match Python "

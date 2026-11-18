@@ -1,6 +1,6 @@
 # Camera acquisition and SDK integration
 
-Implementation: [camera_controller.py](../camera_controller.py), [mvsdk.py](../mvsdk.py).
+Implementation: [camera controller](../vision/camera/controller.py), [MindVision SDK bindings](../vision/camera/mvsdk.py).
 
 ## Function analysis
 

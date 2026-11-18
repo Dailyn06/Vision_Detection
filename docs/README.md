@@ -8,10 +8,10 @@ Analysis date: 2026-11-16. These documents describe the current source and propo
 | --- | --- | --- |
 | Product scope and user value | [Product analysis](01-product-analysis.md) | Whole application |
 | Architecture and development sequence | [Design strategy](02-design-strategy.md) | Whole application |
-| Camera acquisition and native SDK | [Camera acquisition](03-camera-acquisition.md) | `camera_controller.py`, `mvsdk.py` |
-| Image comparison and object regions | [Detection engine](04-detection-engine.md) | `Detection.py` |
+| Camera acquisition and native SDK | [Camera acquisition](03-camera-acquisition.md) | `vision/camera/` |
+| Image comparison and object regions | [Detection engine](04-detection-engine.md) | `vision/detection.py` |
 | Inspection lifecycle and alarm decisions | [Inspection control](05-inspection-control.md) | `main.py`, `InspectionService` |
-| PLC communication and reset requests | [PLC integration](06-plc-integration.md) | `plc_output.py`, PLC JSON configuration |
+| PLC communication and reset requests | [PLC integration](06-plc-integration.md) | `vision/plc_output.py`, `plc/` |
 | Alarm records and image evidence | [Evidence management](07-evidence-management.md) | `main.py`, evidence helpers in `vision_server.py` |
 | HTTP API, state and preview delivery | [Application service](08-application-service.md) | `vision_server.py` |
 | Operator interaction and visual design | [Operator dashboard](09-operator-dashboard.md) | `UI/src/App.tsx`, `UI/src/index.css` |

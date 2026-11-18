@@ -23,7 +23,7 @@ Reviewed: 2026-11-13. Scope: source inspection of `UI/` and the Python integrati
 
 The actual application detects foreign objects against `RefPic/Ref1.png` inside a circular ROI. `Detection.detection()` returns an annotated image, mask and object count; it does not return model confidence, packaging classifications or inspected-unit counts.
 
-`main.py:run_camera()` owns the camera loop, consecutive-frame confirmation, alarm latch, evidence saving and keyboard reset. `camera_controller.py:MindVisionCamera` owns the native SDK camera. `plc_output.py:PLCAlarmOutput` maintains PLC communications in a background worker. No HTTP or streaming API was found in these integration files.
+`main.py:run_camera()` owns the camera loop, consecutive-frame confirmation, alarm latch, evidence saving and keyboard reset. `vision/camera/controller.py:MindVisionCamera` owns the native SDK camera. `vision/plc_output.py:PLCAlarmOutput` maintains PLC communications in a background worker. No HTTP or streaming API was found in these integration files.
 
 The next UI must describe this workflow accurately: inspection frames are not production units, a confirmed alarm is not an automatic reject-lane action, and a PLC request does not prove that a physical buzzer/output activated.
 

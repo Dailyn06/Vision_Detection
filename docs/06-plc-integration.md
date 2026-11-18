@@ -1,6 +1,6 @@
 # PLC communication and output requests
 
-Implementation: [plc_output.py](../plc_output.py), [example configuration](../plc_config.example.json). Actual addresses and network settings belong to the site-specific `plc_config.json`.
+Implementation: [PLC output](../vision/plc_output.py), [example configuration](../plc/plc_config.example.json), and [Haiwell project](../plc/DetectionAlarm.gpc). Actual addresses and network settings belong to the site-specific `plc_config.json`.
 
 ## Function analysis
 

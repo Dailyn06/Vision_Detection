@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import main
 
-from plc_output import ModbusCoilClient, PLCAlarmOutput, PLCConfig
+from vision.plc_output import ModbusCoilClient, PLCAlarmOutput, PLCConfig
 
 
 class Simulator(socketserver.ThreadingTCPServer):
@@ -189,12 +189,12 @@ class PLCOutputTests(unittest.TestCase):
                 self.wait_for(lambda: (7, 5, 3072, 0xFF00) in self.server.writes)
                 return True
 
-            with patch("camera_controller.MindVisionCamera", return_value=camera), \
+            with patch("vision.camera.controller.MindVisionCamera", return_value=camera), \
                  patch.object(main, "TEST_DIR", root / "TestPic"), \
                  patch.object(main, "RESULT_DIR", root / "Results"), \
                  patch.object(main.cv2, "imread", return_value=frame), \
                  patch.object(main.cv2, "imwrite", side_effect=save_after_delivery) as write, \
-                 patch.object(main.Detection, "detection", side_effect=[(frame, mask, n) for n in counts]), \
+                 patch.object(main.detection, "detection", side_effect=[(frame, mask, n) for n in counts]), \
                  patch("builtins.print"):
                 main.run_camera(args)
             self.assertEqual(write.call_count, 3)
@@ -215,14 +215,14 @@ class PLCOutputTests(unittest.TestCase):
                                exposure_us=10000, flip_vertical=False, frame_rate=10,
                                light_frequency=50, confirm_frames=3, show=True)
         with TemporaryDirectory() as directory, \
-             patch("plc_output.PLCConfig.load", return_value=self.config), \
-             patch("plc_output.PLCAlarmOutput", return_value=plc), \
-             patch("camera_controller.MindVisionCamera", return_value=camera), \
+             patch("vision.plc_output.PLCConfig.load", return_value=self.config), \
+             patch("vision.plc_output.PLCAlarmOutput", return_value=plc), \
+             patch("vision.camera.controller.MindVisionCamera", return_value=camera), \
              patch.object(main, "TEST_DIR", Path(directory) / "TestPic"), \
              patch.object(main, "RESULT_DIR", Path(directory) / "Results"), \
              patch.object(main.cv2, "imread", return_value=frame), \
              patch.object(main.cv2, "imwrite", return_value=True) as write, \
-             patch.object(main.Detection, "detection", side_effect=[(frame, mask, n) for n in counts]), \
+             patch.object(main.detection, "detection", side_effect=[(frame, mask, n) for n in counts]), \
              patch.multiple(main.cv2, namedWindow=MagicMock(), resizeWindow=MagicMock(),
                             imshow=MagicMock(), destroyAllWindows=MagicMock()), \
              patch.object(main.cv2, "waitKey", side_effect=keys), \

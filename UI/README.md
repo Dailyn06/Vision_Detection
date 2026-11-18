@@ -37,7 +37,7 @@ Camera options are supported, for example:
 python vision_server.py --camera-index 0 --sdk-dir "C:\path\to\SDK\x64" --frame-rate 10 --confirm-frames 3 --plc-config plc_config.json
 ```
 
-Use `python vision_server.py --help` for all options. Settings shown under Configuration are read-only; configure them at launch and detector parameters in `Detection.py`.
+Use `python vision_server.py --help` for all options. Configuration displays the launch settings. Edit detector parameters in [`vision/detection.py`](../vision/detection.py).
 
 The camera adapter automatically looks for the SDK under the standard MindVision installation in Program Files. For a custom installation, use `--sdk-dir` pointing to the folder containing `MVCAMSDK_X64.dll` for 64-bit Python. After updating Python source files, stop the running service with Ctrl+C and restart it to load the changes.
 

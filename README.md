@@ -6,6 +6,10 @@ control the camera, and review alarm evidence. For automated signaling, the
 system can send confirmed alarm requests over Modbus TCP to a Haiwell AC16S0T
 PLC. PLC ladder logic drives the buzzer and light.
 
+**[Open the dashboard on this computer](http://127.0.0.1:8765)** after starting
+`python vision_server.py`. For a fresh checkout, follow the
+[dashboard setup](#web-dashboard).
+
 ## Current behavior
 
 - Compares live images against the fixed reference `RefPic/Ref1.png`.
@@ -34,7 +38,7 @@ PLC. PLC ladder logic drives the buzzer and light.
    and reserved coil addresses.
 
    ```powershell
-   Copy-Item plc_config.example.json plc_config.json
+   Copy-Item plc/plc_config.example.json plc_config.json
    ```
 
 ## Web dashboard
@@ -115,7 +119,7 @@ filenames are overwritten on repeated offline runs.
 ## PLC configuration
 
 Set `host`, `port`, and `unit_id` in `plc_config.json` to match your PLC. The
-[example configuration](plc_config.example.json) uses port `502` and unit ID
+[example configuration](plc/plc_config.example.json) uses port `502` and unit ID
 `1`. Verify that these example memory assignments are available in your PLC.
 
 | JSON setting | Example address | PLC function |
@@ -151,7 +155,31 @@ Timing settings in JSON: `timeout` = 1 s per socket operation,
 `heartbeat_interval` = 0.5 s between update cycles, and `inspection_timeout` = 5 s
 before inspection is considered stale. Configure the PLC watchdog accordingly.
 
-## Tests and architecture
+## Test results
+
+Software checks run on November 18, 2026.
+
+| Check | Result |
+|---|---|
+| Python regression suite | 18 passed across SDK discovery, PLC communication, and the dashboard service |
+| UI production build | TypeScript checks and Vite build passed |
+| Local dashboard HTTP check | Page, JavaScript bundle, status, and six saved alarm records returned HTTP `200` |
+| Offline detector run | Eight images processed and 16 output PNGs produced |
+
+The offline run compared the checked-in inputs against `RefPic/Ref1.png`.
+
+| Sample input | Detected regions |
+|---|---:|
+| [Test1.png](TestPic/Test1.png) | 6 |
+| [Test2.png](TestPic/Test2.png) | 8 |
+| [Test3.png](TestPic/Test3.png) | 5 |
+
+Test1 binary mask from that run. White areas are the regions accepted by the detector.
+
+<img src="docs/assets/test1-mask.png" alt="Test1 binary detection mask with six white regions" width="520">
+
+These checks cover the software and saved inputs. Live camera acquisition and
+physical PLC outputs require hardware verification.
 
 Run the Python regression tests from the repository root.
 
@@ -159,4 +187,15 @@ Run the Python regression tests from the repository root.
 python -B -m unittest discover -s tests -v
 ```
 
-See [docs/README.md](docs/README.md) for the system architecture and component guides.
+## Project structure
+
+| Part | Location | Contents |
+|---|---|---|
+| Launch commands | [`main.py`](main.py), [`vision_server.py`](vision_server.py) | CLI inspection and local dashboard service |
+| Dashboard | [`UI/`](UI/) | React interface and Vite build |
+| Camera | [`vision/camera/`](vision/camera/) | MindVision controller and native SDK bindings |
+| Detection | [`vision/detection.py`](vision/detection.py) | Circular inspection area, image comparison, and region labeling |
+| PLC | [`vision/plc_output.py`](vision/plc_output.py), [`plc/`](plc/) | Modbus client, configuration example, and Haiwell ladder project |
+| Inspection images | [`RefPic/`](RefPic/), [`TestPic/`](TestPic/), [`Results/`](Results/) | Reference image, offline inputs and raw captures, annotated results and masks |
+| Verification | [`tests/`](tests/) | Python regression suite |
+| Documentation | [`docs/`](docs/README.md) | Architecture and component guides |

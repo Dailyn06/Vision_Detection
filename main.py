@@ -4,7 +4,7 @@ from datetime import datetime
 from contextlib import nullcontext
 
 import cv2
-import Detection
+from vision import detection
 
 BASE_DIR = Path(__file__).resolve().parent
 REFERENCE_DIR = BASE_DIR / "RefPic"
@@ -42,8 +42,8 @@ def main(show_windows=False):
         if reference.shape[:2] != frame.shape[:2]:
             comparison_reference = cv2.resize(reference, (frame.shape[1], frame.shape[0]))
         # Generate the ROI at the comparison resolution; preserve the original reference.
-        mask, _ = Detection.disk_mask(comparison_reference)
-        result, binary, count = Detection.detection(frame, comparison_reference, mask)
+        mask, _ = detection.disk_mask(comparison_reference)
+        result, binary, count = detection.detection(frame, comparison_reference, mask)
         for suffix, image in (("detection", result), ("mask", binary)):
             output_path = RESULT_DIR / f"{image_path.name}_{suffix}.png"
             if not cv2.imwrite(str(output_path), image):
@@ -68,8 +68,8 @@ def main(show_windows=False):
 
 
 def run_camera(args, bridge=None):
-    from camera_controller import MindVisionCamera
-    from plc_output import PLCAlarmOutput, PLCConfig
+    from vision.camera.controller import MindVisionCamera
+    from vision.plc_output import PLCAlarmOutput, PLCConfig
 
     plc_config = getattr(args, "plc_config", None)
     plc_output = PLCAlarmOutput(PLCConfig.load(plc_config)) if plc_config else None
@@ -77,7 +77,7 @@ def run_camera(args, bridge=None):
     reference = cv2.imread(str(REFERENCE_IMAGE))
     if reference is None:
         raise ValueError(f"Cannot read fixed reference image: {REFERENCE_IMAGE}")
-    mask, _ = Detection.disk_mask(reference)
+    mask, _ = detection.disk_mask(reference)
     TEST_DIR.mkdir(parents=True, exist_ok=True)
     RESULT_DIR.mkdir(parents=True, exist_ok=True)
     alarm_latched = bridge.alarm_latched if bridge else False
@@ -97,7 +97,7 @@ def run_camera(args, bridge=None):
                         f"Camera shape {frame.shape} differs from reference {reference.shape}. "
                         "Capture a clean reference using identical camera settings and orientation."
                     )
-                result, binary, count = Detection.detection(frame, reference, mask)
+                result, binary, count = detection.detection(frame, reference, mask)
                 positive_frames = positive_frames + 1 if count else 0
                 clear_frames = clear_frames + 1 if count == 0 else 0
                 newly_confirmed = not alarm_latched and positive_frames >= args.confirm_frames
