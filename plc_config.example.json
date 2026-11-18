@@ -1,0 +1,12 @@
+{
+  "host": "192.168.1.10",
+  "port": 502,
+  "unit_id": 1,
+  "alarm_coil": 3072,
+  "heartbeat_coil": 3073,
+  "healthy_coil": 3074,
+  "reset_coil": 3075,
+  "timeout": 1.0,
+  "heartbeat_interval": 0.5,
+  "inspection_timeout": 5.0
+}

@@ -1,6 +1,7 @@
 ﻿import argparse
 from pathlib import Path
 from datetime import datetime
+from contextlib import nullcontext
 
 import cv2
 import Detection
@@ -66,8 +67,12 @@ def main(show_windows=False):
         print(f"No readable test images found in {TEST_DIR}", flush=True)
 
 
-def run_camera(args):
+def run_camera(args, bridge=None):
     from camera_controller import MindVisionCamera
+    from plc_output import PLCAlarmOutput, PLCConfig
+
+    plc_config = getattr(args, "plc_config", None)
+    plc_output = PLCAlarmOutput(PLCConfig.load(plc_config)) if plc_config else None
 
     reference = cv2.imread(str(REFERENCE_IMAGE))
     if reference is None:
@@ -75,14 +80,17 @@ def run_camera(args):
     mask, _ = Detection.disk_mask(reference)
     TEST_DIR.mkdir(parents=True, exist_ok=True)
     RESULT_DIR.mkdir(parents=True, exist_ok=True)
-    alarm_latched = False
+    alarm_latched = bridge.alarm_latched if bridge else False
+    if plc_output is not None and alarm_latched:
+        plc_output.alarm = True
     positive_frames = 0
-    print("Monitoring: Ctrl+C to stop; Q to quit preview. Software alarm stays latched until restart.", flush=True)
+    clear_frames = 0
+    print("Monitoring: Ctrl+C to stop; Q to quit preview; R to reset after clear frames.", flush=True)
     try:
-        with MindVisionCamera(args.camera_index, args.sdk_dir, args.exposure_us,
+        with (plc_output if plc_output else nullcontext()) as plc, MindVisionCamera(args.camera_index, args.sdk_dir, args.exposure_us,
                               args.flip_vertical, frame_rate=args.frame_rate,
                               light_frequency=args.light_frequency) as camera:
-            while True:
+            while bridge is None or not bridge.stop_event.is_set():
                 frame = camera.read()
                 if frame.shape != reference.shape:
                     raise ValueError(
@@ -91,9 +99,18 @@ def run_camera(args):
                     )
                 result, binary, count = Detection.detection(frame, reference, mask)
                 positive_frames = positive_frames + 1 if count else 0
-                if not alarm_latched and positive_frames >= args.confirm_frames:
+                clear_frames = clear_frames + 1 if count == 0 else 0
+                newly_confirmed = not alarm_latched and positive_frames >= args.confirm_frames
+                if plc is not None:
+                    # Queue the alarm before disk I/O; the worker maintains PLC communications.
+                    plc.inspection_completed(alarm_latched or newly_confirmed)
+                if newly_confirmed:
                     alarm_latched = True
-                    print("FOREIGN OBJECT ALARM (software only; no physical output connected)", flush=True)
+                    if bridge is not None:
+                        with bridge.lock:
+                            bridge.alarm_latched = True
+                    print("FOREIGN OBJECT ALARM: " + ("PLC request queued" if plc is not None else
+                          "software only; PLC not configured"), flush=True)
                     event = datetime.now().strftime("alarm_%Y%m%d_%H%M%S_%f")
                     outputs = (
                         (TEST_DIR / f"{event}_raw.png", frame),
@@ -104,12 +121,40 @@ def run_camera(args):
                         if not cv2.imwrite(str(path), image):
                             raise OSError(f"Cannot save alarm evidence: {path}")
                     print(f"Raw capture saved in {TEST_DIR}; results saved in {RESULT_DIR}", flush=True)
+                if bridge is not None:
+                    reset = bridge.publish(frame, result, count, alarm_latched, clear_frames, plc)
+                    if reset is not None:
+                        try:
+                            if clear_frames < args.confirm_frames:
+                                raise RuntimeError(f"Need {args.confirm_frames} consecutive clear frames")
+                            if plc is not None:
+                                plc.request_reset()
+                            alarm_latched = False
+                            positive_frames = 0
+                            bridge.complete_reset(reset, None)
+                        except RuntimeError as error:
+                            bridge.complete_reset(reset, str(error))
                 if args.show:
                     cv2.namedWindow("Camera inspection", cv2.WINDOW_NORMAL)
                     cv2.resizeWindow("Camera inspection", 1000, 750)
                     cv2.imshow("Camera inspection", result)
-                    if cv2.waitKey(1) & 0xFF in (ord('q'), 27):
+                    key = cv2.waitKey(1) & 0xFF
+                    if key in (ord('q'), 27):
                         break
+                    if key in (ord('r'), ord('R')):
+                        if clear_frames < args.confirm_frames:
+                            print(f"Reset refused: need {args.confirm_frames} consecutive clear frames.", flush=True)
+                        else:
+                            try:
+                                if plc is not None:
+                                    plc.request_reset()
+                            except RuntimeError as error:
+                                print(f"Reset refused: {error}", flush=True)
+                            else:
+                                alarm_latched = False
+                                positive_frames = 0
+                                print("Python alarm reset; PLC reset queued." if plc is not None else
+                                      "Python alarm reset.", flush=True)
     except KeyboardInterrupt:
         print("Camera monitoring stopped.", flush=True)
     except Exception:
@@ -131,9 +176,12 @@ if __name__ == "__main__":
     parser.add_argument("--light-frequency", type=int, choices=(50, 60), default=50, help="Anti-flicker mains frequency in Hz")
     parser.add_argument("--flip-vertical", action="store_true", help="Flip frames to match reference orientation")
     parser.add_argument("--confirm-frames", type=int, default=3)
+    parser.add_argument("--plc-config", help="Enable PLC Modbus TCP output using a JSON configuration")
     args = parser.parse_args()
     if args.confirm_frames < 1:
         parser.error("--confirm-frames must be at least 1")
+    if args.plc_config and not args.camera:
+        parser.error("--plc-config requires --camera; folder tests do not operate PLC outputs")
     if args.camera:
         run_camera(args)
     else:

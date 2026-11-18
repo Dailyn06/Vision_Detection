@@ -1,0 +1,10 @@
+{
+  "description": "Monitor industrial vision and detection systems, track inspection results, and help operators identify issues quickly to maintain quality and production efficiency.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

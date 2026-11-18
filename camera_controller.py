@@ -10,6 +10,23 @@ import cv2
 import numpy as np
 
 
+def find_sdk_directory(sdk_dir=None):
+    """Use an explicit SDK path or the vendor's standard Windows installation."""
+    if sdk_dir:
+        return Path(sdk_dir).resolve()
+    is_64bit = ctypes.sizeof(ctypes.c_void_p) == 8
+    dll_name = 'MVCAMSDK_X64.dll' if is_64bit else 'MVCAMSDK.dll'
+    for variable in ('ProgramFiles(x86)', 'ProgramFiles'):
+        root = os.environ.get(variable)
+        if root:
+            directory = Path(root) / 'MindVision' / 'SDK'
+            if is_64bit:
+                directory /= 'X64'
+            if (directory / dll_name).is_file():
+                return directory
+    return None
+
+
 class MindVisionCamera:
     def __init__(self, index=0, sdk_dir=None, exposure_us=10000, flip_vertical=False,
                  frame_rate=10, light_frequency=50):
@@ -34,11 +51,12 @@ class MindVisionCamera:
         if self.light_frequency not in (50, 60):
             raise ValueError("Light frequency must be 50 or 60 Hz")
         try:
-            if self.sdk_dir:
-                self.dll_directory = os.add_dll_directory(str(Path(self.sdk_dir).resolve()))
+            sdk_directory = find_sdk_directory(self.sdk_dir)
+            if sdk_directory:
+                self.dll_directory = os.add_dll_directory(str(sdk_directory))
             try:
                 self.sdk = importlib.import_module("mvsdk")
-            except OSError as error:
+            except (OSError, AttributeError) as error:
                 raise RuntimeError(
                     "Cannot load MindVision SDK. Install Windows SDK/drivers, match Python "
                     "and DLL bitness, and specify --sdk-dir if needed. " + str(error)
