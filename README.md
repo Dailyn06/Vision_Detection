@@ -168,15 +168,8 @@ Software checks run on November 18, 2026.
 
 The offline run compared the checked-in inputs against `RefPic/Ref1.png`.
 
-| Sample input | Detected regions |
-|---|---:|
-| [Test1.png](TestPic/Test1.png) | 6 |
-| [Test2.png](TestPic/Test2.png) | 8 |
-| [Test3.png](TestPic/Test3.png) | 5 |
-
-Test1 binary mask from that run. White areas are the regions accepted by the detector.
-
-<img src="docs/assets/test1-mask.png" alt="Test1 binary detection mask with six white regions" width="520">
+Example:
+<img src="Results\alarm_20261030_164803_396378_detection.png" alt="Foreign Object Detected Demo" width="520">
 
 These checks cover the software and saved inputs. Live camera acquisition and
 physical PLC outputs require hardware verification.
